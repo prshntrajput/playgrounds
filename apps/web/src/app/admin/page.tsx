@@ -302,12 +302,15 @@ export default function AdminPage() {
   // Fetch submissions whenever tab or auth changes
   useEffect(() => {
     if (authState !== "ok" || !token) return;
-    setFetching(true);
-    setSubs([]);
-    apiClient.admin.submissions(tab, token)
-      .then((res) => setSubs(res.submissions as unknown as Submission[]))
-      .catch(console.error)
-      .finally(() => setFetching(false));
+    void (async () => {
+      setFetching(true);
+      setSubs([]);
+      try {
+        const res = await apiClient.admin.submissions(tab, token);
+        setSubs(res.submissions as unknown as Submission[]);
+      } catch (e) { console.error(e); }
+      finally { setFetching(false); }
+    })();
   }, [tab, authState, token]);
 
   const handleReviewed = useCallback((id: string) => {

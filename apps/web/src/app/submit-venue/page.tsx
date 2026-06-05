@@ -126,7 +126,7 @@ function VenueSearch({ onSelect }: { onSelect: (v: ClaimedVenue) => void }) {
       )}
       {!loading && query.length >= 2 && results.length === 0 && (
         <p className="text-xs mt-2" style={{ color: "oklch(0.50 0.008 248)" }}>
-          No venues found. If your venue is not listed, use "List New Venue" instead.
+          No venues found. If your venue is not listed, use &quot;List New Venue&quot; instead.
         </p>
       )}
     </div>
@@ -158,6 +158,10 @@ function SubmitVenueForm() {
   const [openingHours, setOpeningHours] = useState("");
   const [pricePerHour, setPricePerHour] = useState("");
   const [amenities,    setAmenities]    = useState<string[]>([]);
+  const [latitude,     setLatitude]     = useState<number | null>(null);
+  const [longitude,    setLongitude]    = useState<number | null>(null);
+  const [geocoding,    setGeocoding]    = useState(false);
+  const [geocodeErr,   setGeocodeErr]   = useState<string | null>(null);
 
   const [loading,  setLoading]  = useState(false);
   const [result,   setResult]   = useState<{ id: string; message: string } | null>(null);
@@ -167,19 +171,40 @@ function SubmitVenueForm() {
   useEffect(() => {
     const claimId = searchParams.get("claim");
     if (!claimId) return;
-    setMode("claim");
-    setLoadingVenue(true);
-    const supabase = createSupabaseBrowserClient();
-    supabase
-      .from("venues")
-      .select("id, name, type, city")
-      .eq("id", claimId)
-      .single()
-      .then(({ data }) => {
-        if (data) setClaimedVenue(data as ClaimedVenue);
-        setLoadingVenue(false);
-      });
+    void (async () => {
+      setMode("claim");
+      setLoadingVenue(true);
+      const supabase = createSupabaseBrowserClient();
+      const { data } = await supabase
+        .from("venues")
+        .select("id, name, type, city")
+        .eq("id", claimId)
+        .single();
+      if (data) setClaimedVenue(data as ClaimedVenue);
+      setLoadingVenue(false);
+    })();
   }, [searchParams]);
+
+  const geocodeAddress = useCallback(async () => {
+    const q = [address, city, country].filter(Boolean).join(", ");
+    if (!q) return;
+    setGeocoding(true);
+    setGeocodeErr(null);
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&countrycodes=in`,
+        { headers: { "User-Agent": "PlaygroundsAI/1.0" } }
+      );
+      const data = await res.json() as Array<{ lat: string; lon: string; display_name: string }>;
+      if (!data.length) { setGeocodeErr("Address not found — try adding more detail"); return; }
+      setLatitude(parseFloat(data[0].lat));
+      setLongitude(parseFloat(data[0].lon));
+    } catch {
+      setGeocodeErr("Geocoding failed — check your internet connection");
+    } finally {
+      setGeocoding(false);
+    }
+  }, [address, city, country]);
 
   const toggleAmenity = useCallback((val: string) => {
     setAmenities((prev) =>
@@ -209,6 +234,8 @@ function SubmitVenueForm() {
         if (description)  payload.description  = description;
         if (openingHours) payload.openingHours = openingHours;
         if (pricePerHour) payload.pricePerHour = Number(pricePerHour);
+        if (latitude  !== null) payload.latitude  = latitude;
+        if (longitude !== null) payload.longitude = longitude;
       }
 
       const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8787";
@@ -226,7 +253,8 @@ function SubmitVenueForm() {
       setLoading(false);
     }
   }, [mode, claimedVenue, ownerName, ownerEmail, contactPhone, contactWhatsapp,
-      proofText, name, type, address, city, country, description, openingHours, pricePerHour, amenities]);
+      proofText, name, type, address, city, country, description, openingHours, pricePerHour, amenities,
+      latitude, longitude]);
 
   const canSubmit =
     ownerName && ownerEmail &&
@@ -388,20 +416,73 @@ function SubmitVenueForm() {
             <>
               {field("Street Address",
                 <input style={inputStyle} placeholder="123 Stadium Road, Sector 45"
-                  value={address} onChange={(e) => setAddress(e.target.value)} />
+                  value={address} onChange={(e) => { setAddress(e.target.value); setLatitude(null); setLongitude(null); }} />
               )}
               <div className="grid grid-cols-2 gap-4">
                 {field("City *",
-                  <input style={inputStyle} placeholder="Delhi"
-                    value={city} onChange={(e) => setCity(e.target.value)} />
+                  <input style={inputStyle} placeholder="Budaun"
+                    value={city} onChange={(e) => { setCity(e.target.value); setLatitude(null); setLongitude(null); }} />
                 )}
                 {field("Country",
                   <input style={inputStyle} placeholder="India"
                     value={country} onChange={(e) => setCountry(e.target.value)} />
                 )}
               </div>
+
+              {/* Geocode button */}
+              {(address || city) && latitude === null && (
+                <button
+                  type="button"
+                  onClick={geocodeAddress}
+                  disabled={geocoding}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all disabled:opacity-50"
+                  style={{ background: "oklch(0.6692 0.1607 245 / 0.12)", borderColor: "oklch(0.6692 0.1607 245 / 0.4)", color: "oklch(0.6692 0.1607 245)" }}
+                >
+                  {geocoding ? "⏳ Finding location…" : "📍 Auto-detect coordinates from address"}
+                </button>
+              )}
+
+              {/* Geocode result */}
+              {latitude !== null && longitude !== null && (
+                <div className="flex items-center gap-3 p-3 rounded-xl border"
+                     style={{ background: "#22c55e0e", borderColor: "#22c55e33" }}>
+                  <span className="text-lg">✅</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold" style={{ color: "#22c55e" }}>Location found</p>
+                    <p className="text-[11px] font-mono" style={{ color: "oklch(0.55 0.008 248)" }}>
+                      {latitude.toFixed(5)}, {longitude.toFixed(5)}
+                    </p>
+                  </div>
+                  <a
+                    href={`https://www.google.com/maps?q=${latitude},${longitude}`}
+                    target="_blank" rel="noopener"
+                    className="text-xs font-semibold underline"
+                    style={{ color: "oklch(0.6692 0.1607 245)" }}
+                  >
+                    Verify →
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => { setLatitude(null); setLongitude(null); }}
+                    className="text-xs"
+                    style={{ color: "oklch(0.50 0.008 248)" }}
+                  >✕</button>
+                </div>
+              )}
+
+              {geocodeErr && (
+                <p className="text-xs" style={{ color: "#ef4444" }}>⚠ {geocodeErr}</p>
+              )}
+
+              {/* No coordinates yet — show info */}
+              {latitude === null && !address && !city && (
+                <p className="text-[11px]" style={{ color: "oklch(0.45 0.008 248)" }}>
+                  Fill in address or city, then click &quot;Auto-detect coordinates&quot; — our team will also verify during review.
+                </p>
+              )}
             </>,
-            "Location"
+            "Location",
+            "We need approximate coordinates to show your venue on the map"
           )}
 
           {card(

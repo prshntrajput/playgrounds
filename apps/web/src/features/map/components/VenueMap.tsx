@@ -90,21 +90,6 @@ export function VenueMap({ venues, center, selectedId, onMarkerClick, userLocati
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── update markers when venues change ─────────────────────────
-  useEffect(() => {
-    const map = mapRef.current;
-    const L   = leafletRef.current;
-    if (!map || !L) {
-      const timer = setTimeout(() => {
-        const m = mapRef.current, l = leafletRef.current;
-        if (m && l) renderMarkers(m, l);
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-    renderMarkers(map, L);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [venues, selectedId, userLocation]);
-
   function renderMarkers(map: import("leaflet").Map, L: typeof import("leaflet")) {
     // Remove old markers
     markersRef.current.forEach((m) => m.remove());
@@ -177,6 +162,21 @@ export function VenueMap({ venues, center, selectedId, onMarkerClick, userLocati
       map.fitBounds(bounds, { padding: [48, 48], maxZoom: 15 });
     }
   }
+
+  // ── update markers when venues change ─────────────────────────
+  useEffect(() => {
+    const map = mapRef.current;
+    const L   = leafletRef.current;
+    if (!map || !L) {
+      const timer = setTimeout(() => {
+        const m = mapRef.current, l = leafletRef.current;
+        if (m && l) renderMarkers(m, l);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+    renderMarkers(map, L);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [venues, selectedId, userLocation]);
 
   // ── user location blue dot ────────────────────────────────────
   useEffect(() => {

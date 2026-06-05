@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { apiClient } from "../../../lib/api-client";
 
 type Answer   = { id: string; answer: string; helpful_count: number; created_at: string };
@@ -33,15 +33,14 @@ export function VenueQA({ venueId }: VenueQAProps) {
   const [helpfulVoted, setHelpfulVoted] = useState<Set<string>>(new Set());
   const [expandedQ, setExpandedQ]     = useState<string | null>(null);
 
-  const fetchQA = useCallback(async () => {
-    try {
-      const data = await apiClient.qa.list(venueId);
-      setQuestions(data);
-    } catch { /* silent */ }
-    finally { setLoading(false); }
+  useEffect(() => {
+    let active = true;
+    apiClient.qa.list(venueId)
+      .then((data) => { if (active) setQuestions(data); })
+      .catch(() => {})
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [venueId]);
-
-  useEffect(() => { fetchQA(); }, [fetchQA]);
 
   const handleAsk = async () => {
     if (!newQ.trim() || newQ.length < 5) return;

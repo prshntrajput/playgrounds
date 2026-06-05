@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { apiClient } from "../../../lib/api-client";
 
 interface StatusVotes {
@@ -27,15 +27,14 @@ export function StatusVoteBar({ venueId }: StatusVoteBarProps) {
   const [myVote, setMyVote]   = useState<"OPEN" | "CLOSED" | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchVotes = useCallback(async () => {
-    try {
-      const data = await apiClient.statusVotes.get(venueId);
-      setVotes(data);
-    } catch { /* silent */ }
-    finally { setLoading(false); }
+  useEffect(() => {
+    let active = true;
+    apiClient.statusVotes.get(venueId)
+      .then((data) => { if (active) setVotes(data); })
+      .catch(() => {})
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [venueId]);
-
-  useEffect(() => { fetchVotes(); }, [fetchVotes]);
 
   const handleVote = async (vote: "OPEN" | "CLOSED") => {
     if (voting || myVote) return;

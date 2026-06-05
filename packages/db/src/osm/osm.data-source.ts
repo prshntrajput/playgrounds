@@ -35,7 +35,10 @@ export class OsmDataSource implements DataSourcePort {
 
     const res = await fetch(OVERPASS_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": "PlaygroundsAI/1.0 (https://playgrounds.ai; contact@playgrounds.ai)",
+      },
       body: `data=${encodeURIComponent(query)}`,
       signal: AbortSignal.timeout(55_000),
     });

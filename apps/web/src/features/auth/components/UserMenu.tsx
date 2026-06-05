@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { createSupabaseBrowserClient } from "../../../lib/supabase-browser";
 import { useSession } from "../hooks/useSession";
 import { SignInButton } from "./SignInButton";
@@ -20,10 +21,13 @@ export function UserMenu() {
   return (
     <div className="flex items-center gap-3">
       {session.user.user_metadata?.avatar_url && (
-        <img
+        <Image
           src={session.user.user_metadata.avatar_url as string}
           alt="avatar"
-          className="h-8 w-8 rounded-full"
+          width={32}
+          height={32}
+          className="rounded-full"
+          unoptimized
         />
       )}
       <span className="text-sm text-muted-foreground hidden sm:block">

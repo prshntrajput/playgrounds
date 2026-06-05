@@ -18,21 +18,34 @@ export class SupabaseVenueRepository implements VenueRepository {
   }
 
   async findNearby(params: FindNearbyParams): Promise<{ venues: VenueEntity[]; total: number }> {
-    const { data, error } = await this.db.rpc("find_venues_nearby", {
-      p_lat: params.lat,
-      p_lng: params.lng,
-      p_radius_km: params.radiusKm,
-      p_sport: params.sport ?? null,
-      p_status: params.status ?? null,
-      p_limit: params.limit,
-      p_offset: params.offset,
-    });
+    // Run the paginated results and a count query in parallel
+    const [pageResult, countResult] = await Promise.all([
+      this.db.rpc("find_venues_nearby", {
+        p_lat:       params.lat,
+        p_lng:       params.lng,
+        p_radius_km: params.radiusKm,
+        p_sport:     params.sport  ?? null,
+        p_status:    params.status ?? null,
+        p_limit:     params.limit,
+        p_offset:    params.offset,
+      }),
+      // count_venues_nearby is defined in migration 005 — falls back to page size if not yet deployed
+      this.db.rpc("count_venues_nearby", {
+        p_lat:       params.lat,
+        p_lng:       params.lng,
+        p_radius_km: params.radiusKm,
+        p_sport:     params.sport  ?? null,
+        p_status:    params.status ?? null,
+      }),
+    ]);
 
-    if (error) throw error;
+    if (pageResult.error) throw pageResult.error;
 
-    const rows = (data ?? []) as VenueRow[];
+    const rows   = (pageResult.data ?? []) as VenueRow[];
     const venues = rows.map(rowToVenue);
-    return { venues, total: venues.length };
+    // Use real count when available, fall back to page length
+    const total  = countResult.error ? venues.length : (countResult.data as number);
+    return { venues, total };
   }
 
   async findByExternalRef(externalRef: string): Promise<VenueEntity | null> {

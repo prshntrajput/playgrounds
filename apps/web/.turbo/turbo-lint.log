@@ -1,0 +1,130 @@
+
+> web@0.1.0 lint
+> eslint
+
+
+/home/prshant/personal/playgrounds-ai/apps/web/src/app/admin/page.tsx
+  305:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/prshant/personal/playgrounds-ai/apps/web/src/app/admin/page.tsx:305:5
+  303 |   useEffect(() => {
+  304 |     if (authState !== "ok" || !token) return;
+> 305 |     setFetching(true);
+      |     ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  306 |     setSubs([]);
+  307 |     apiClient.admin.submissions(tab, token)
+  308 |       .then((res) => setSubs(res.submissions as unknown as Submission[]))  react-hooks/set-state-in-effect
+
+/home/prshant/personal/playgrounds-ai/apps/web/src/app/page.tsx
+  116:75  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  116:83  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+/home/prshant/personal/playgrounds-ai/apps/web/src/app/submit-venue/page.tsx
+  129:61  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react/no-unescaped-entities
+  129:76  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react/no-unescaped-entities
+  174:5   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/prshant/personal/playgrounds-ai/apps/web/src/app/submit-venue/page.tsx:174:5
+  172 |     const claimId = searchParams.get("claim");
+  173 |     if (!claimId) return;
+> 174 |     setMode("claim");
+      |     ^^^^^^^ Avoid calling setState() directly within an effect
+  175 |     setLoadingVenue(true);
+  176 |     const supabase = createSupabaseBrowserClient();
+  177 |     supabase  react-hooks/set-state-in-effect
+  255:6   warning  React Hook useCallback has missing dependencies: 'latitude' and 'longitude'. Either include them or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react-hooks/exhaustive-deps
+  479:55  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react/no-unescaped-entities
+  479:79  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react/no-unescaped-entities
+
+/home/prshant/personal/playgrounds-ai/apps/web/src/features/auth/components/UserMenu.tsx
+  23:9  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/prshant/personal/playgrounds-ai/apps/web/src/features/map/components/VenueMap.tsx
+  100:21  error  Error: Cannot access variable before it is declared
+
+`renderMarkers` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+/home/prshant/personal/playgrounds-ai/apps/web/src/features/map/components/VenueMap.tsx:100:21
+   98 |       const timer = setTimeout(() => {
+   99 |         const m = mapRef.current, l = leafletRef.current;
+> 100 |         if (m && l) renderMarkers(m, l);
+      |                     ^^^^^^^^^^^^^ `renderMarkers` accessed before it is declared
+  101 |       }, 500);
+  102 |       return () => clearTimeout(timer);
+  103 |     }
+
+/home/prshant/personal/playgrounds-ai/apps/web/src/features/map/components/VenueMap.tsx:108:3
+  106 |   }, [venues, selectedId, userLocation]);
+  107 |
+> 108 |   function renderMarkers(map: import("leaflet").Map, L: typeof import("leaflet")) {
+      |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 109 |     // Remove old markers
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 110 |     markersRef.current.forEach((m) => m.remove());
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 178 |     }
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 179 |   }
+      | ^^^^ `renderMarkers` is declared here
+  180 |
+  181 |   // ── user location blue dot ────────────────────────────────────
+  182 |   useEffect(() => {  react-hooks/immutability
+
+/home/prshant/personal/playgrounds-ai/apps/web/src/features/venues/components/StatusVoteBar.tsx
+  38:21  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/prshant/personal/playgrounds-ai/apps/web/src/features/venues/components/StatusVoteBar.tsx:38:21
+  36 |   }, [venueId]);
+  37 |
+> 38 |   useEffect(() => { fetchVotes(); }, [fetchVotes]);
+     |                     ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  39 |
+  40 |   const handleVote = async (vote: "OPEN" | "CLOSED") => {
+  41 |     if (voting || myVote) return;  react-hooks/set-state-in-effect
+
+/home/prshant/personal/playgrounds-ai/apps/web/src/features/venues/components/VenueQA.tsx
+  44:21  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/prshant/personal/playgrounds-ai/apps/web/src/features/venues/components/VenueQA.tsx:44:21
+  42 |   }, [venueId]);
+  43 |
+> 44 |   useEffect(() => { fetchQA(); }, [fetchQA]);
+     |                     ^^^^^^^ Avoid calling setState() directly within an effect
+  45 |
+  46 |   const handleAsk = async () => {
+  47 |     if (!newQ.trim() || newQ.length < 5) return;  react-hooks/set-state-in-effect
+
+✖ 13 problems (11 errors, 2 warnings)
+
+npm error Lifecycle script `lint` failed with error:
+npm error code 1
+npm error path /home/prshant/personal/playgrounds-ai/apps/web
+npm error workspace web@0.1.0
+npm error location /home/prshant/personal/playgrounds-ai/apps/web
+npm error command failed
+npm error command sh -c eslint

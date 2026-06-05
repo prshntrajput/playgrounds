@@ -113,7 +113,7 @@ export default function HomePage() {
       {!loading && venues.length === 0 && !error && (
         <div className="flex flex-col items-center justify-center h-52 gap-3">
           <span className="text-5xl opacity-40">🗺️</span>
-          <p className="text-sm text-muted-foreground">Tap a sport or use "Near me"</p>
+          <p className="text-sm text-muted-foreground">Tap a sport or use &quot;Near me&quot;</p>
         </div>
       )}
 
