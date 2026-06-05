@@ -1,0 +1,27 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { Session } from "@supabase/supabase-js";
+import { createSupabaseBrowserClient } from "../../../lib/supabase-browser";
+
+export function useSession() {
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setLoading(false);
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s);
+    });
+
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  return { session, loading };
+}
