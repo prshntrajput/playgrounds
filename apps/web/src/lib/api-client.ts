@@ -98,6 +98,20 @@ export const apiClient = {
       }),
   },
 
+  me: (token: string) => apiFetch<{ id: string; email: string; role: string }>("/me", { token }),
+
+  admin: {
+    submissions: (status: "PENDING" | "APPROVED" | "REJECTED", token: string) =>
+      apiFetch<{ submissions: Record<string, unknown>[] }>(`/venues/submissions?status=${status}`, { token }),
+
+    review: (id: string, status: "APPROVED" | "REJECTED", adminNotes: string, token: string) =>
+      apiFetch<{ ok: boolean; status: string }>(`/venues/submissions/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status, adminNotes }),
+        token,
+      }),
+  },
+
   qa: {
     list: (venueId: string) =>
       apiFetch<Array<{

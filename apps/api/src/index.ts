@@ -16,6 +16,7 @@ import { runOsmImport } from "./cron/import-osm";
 import { adminRoutes } from "./routes/admin.routes";
 import { statusVotesRoutes } from "./routes/status-votes.routes";
 import { qaRoutes } from "./routes/qa.routes";
+import { venueSubmitRoutes } from "./routes/venue-submit.routes";
 import type { AppEnv } from "./types";
 
 const app = new Hono<AppEnv>();
@@ -34,6 +35,13 @@ app.use("*", async (c, next) => {
 
 app.get("/health", (c) => c.json({ ok: true, ts: new Date().toISOString() }));
 
+// Current user info — used by admin panel and profile page
+app.get("/me", (c) => {
+  const user = c.get("user");
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+  return c.json({ data: { id: user.id, email: user.email, role: user.role } });
+});
+
 // Mount feature routers
 venuesRoutes(app);
 reviewsRoutes(app);
@@ -43,6 +51,7 @@ favoritesRoutes(app);
 adminRoutes(app);
 statusVotesRoutes(app);
 qaRoutes(app);
+venueSubmitRoutes(app);
 
 // Scheduled cron handler
 const scheduled: ExportedHandlerScheduledHandler<Env> = async (event, env) => {

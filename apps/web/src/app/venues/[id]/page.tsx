@@ -158,6 +158,26 @@ export default async function VenuePage({ params }: Props) {
           </div>
         </div>
 
+        {/* ── Actions row (directions + claim) ─────────────────── */}
+        <div className="flex gap-3">
+          <a
+            href={`https://www.google.com/maps/dir/?api=1&destination=${venue.latitude},${venue.longitude}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border font-semibold text-sm transition-all"
+            style={{ background: "#22c55e14", borderColor: "#22c55e44", color: "#22c55e" }}
+          >
+            🗺 Get Directions
+          </a>
+          <Link
+            href={`/submit-venue?claim=${venue.id}`}
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border font-semibold text-sm transition-all"
+            style={{ background: "oklch(0.14 0.010 265)", borderColor: "oklch(0.24 0.010 248)", color: "oklch(0.6692 0.1607 245)" }}
+          >
+            🔑 Own this venue?
+          </Link>
+        </div>
+
         {/* ── Is it open? ───────────────────────────────────────── */}
         <StatusVoteBar venueId={venue.id} />
 

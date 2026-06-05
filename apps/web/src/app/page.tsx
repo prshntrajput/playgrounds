@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { Venue, SportType } from "@playgrounds/shared";
+import { haversineKm, fmtDistance } from "../lib/utils";
 import { SPORT_TYPE } from "@playgrounds/shared";
 import { useSearchVenues } from "../features/search";
 import { UserMenu } from "../features/auth";
@@ -47,6 +48,7 @@ const AMENITY_ICON: Record<string, string> = {
 export default function HomePage() {
   const { venues, loading, error, search } = useSearchVenues();
   const [center, setCenter]               = useState(DEFAULT_CENTER);
+  const [userLocation, setUserLocation]   = useState<{ lat: number; lng: number } | null>(null);
   const [activeSport, setActiveSport]     = useState<SportType | undefined>();
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
   const [locating, setLocating]           = useState(false);
@@ -69,6 +71,7 @@ export default function HomePage() {
       (pos) => {
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setCenter(loc);
+        setUserLocation(loc);
         runSearch({ ...loc, sport: activeSport });
         setLocating(false);
       },
@@ -128,6 +131,9 @@ export default function HomePage() {
             const status = STATUS_CFG[v.status] ?? STATUS_CFG.UNKNOWN;
             const score = Math.round(v.reliabilityScore * 100);
             const scoreColor = score >= 70 ? "#22c55e" : score >= 45 ? "#f59e0b" : "#ef4444";
+            const dist = userLocation
+              ? fmtDistance(haversineKm(userLocation.lat, userLocation.lng, v.latitude, v.longitude))
+              : null;
 
             return (
               <div
@@ -151,6 +157,7 @@ export default function HomePage() {
                       <p className="text-xs text-muted-foreground mt-0.5 truncate">
                         {pill?.icon} {v.type.replace(/_/g, " ")}
                         {v.city ? ` · ${v.city}` : ""}
+                        {dist ? ` · 📍 ${dist}` : ""}
                       </p>
                     </div>
                     <span
@@ -225,6 +232,17 @@ export default function HomePage() {
           >
             {locating ? "⏳ Locating…" : "📍 Near me"}
           </button>
+          <Link
+            href="/submit-venue"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full border transition-all"
+            style={{
+              borderColor: "#22c55e44",
+              background: "#22c55e12",
+              color: "#22c55e",
+            }}
+          >
+            + List Venue
+          </Link>
           <UserMenu />
         </div>
       </header>
@@ -274,6 +292,7 @@ export default function HomePage() {
             center={center}
             selectedId={selectedVenue?.id}
             onMarkerClick={handleMarkerClick}
+            userLocation={userLocation}
           />
         </div>
 
@@ -376,6 +395,7 @@ export default function HomePage() {
             center={center}
             selectedId={selectedVenue?.id}
             onMarkerClick={handleMarkerClick}
+            userLocation={userLocation}
           />
         </main>
       </div>

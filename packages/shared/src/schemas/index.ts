@@ -4,3 +4,4 @@ export * from "./report.schema";
 export * from "./review.schema";
 export * from "./user.schema";
 export * from "./venue.schema";
+export * from "./venue-submit.schema";

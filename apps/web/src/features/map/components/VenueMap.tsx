@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { Venue } from "@playgrounds/shared";
+import { haversineKm, fmtDistance } from "../../../lib/utils";
 
 const SPORT_META: Record<string, { color: string; icon: string }> = {
   BASKETBALL:   { color: "#f97316", icon: "🏀" },
@@ -21,6 +22,7 @@ interface VenueMapProps {
   center: { lat: number; lng: number };
   selectedId?: string | null;
   onMarkerClick?: (venue: Venue) => void;
+  userLocation?: { lat: number; lng: number } | null;
 }
 
 function makePin(color: string, icon: string, selected = false): string {
@@ -42,11 +44,12 @@ function makePin(color: string, icon: string, selected = false): string {
   </div>`;
 }
 
-export function VenueMap({ venues, center, selectedId, onMarkerClick }: VenueMapProps) {
+export function VenueMap({ venues, center, selectedId, onMarkerClick, userLocation }: VenueMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef       = useRef<import("leaflet").Map | null>(null);
-  const markersRef   = useRef<Map<string, import("leaflet").Marker>>(new Map());
-  const leafletRef   = useRef<typeof import("leaflet") | null>(null);
+  const mapRef          = useRef<import("leaflet").Map | null>(null);
+  const markersRef      = useRef<Map<string, import("leaflet").Marker>>(new Map());
+  const leafletRef      = useRef<typeof import("leaflet") | null>(null);
+  const userMarkerRef   = useRef<import("leaflet").CircleMarker | null>(null);
 
   // ── init map once ──────────────────────────────────────────────
   useEffect(() => {
@@ -69,12 +72,11 @@ export function VenueMap({ venues, center, selectedId, onMarkerClick }: VenueMap
       mapRef.current = map;
 
       L.tileLayer(
-        "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         {
           attribution:
-            '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>',
-          subdomains: "abcd",
-          maxZoom: 20,
+            'Tiles © <a href="https://www.esri.com/">Esri</a> — Source: Esri, USGS, NOAA',
+          maxZoom: 19,
         }
       ).addTo(map);
     })();
@@ -93,7 +95,6 @@ export function VenueMap({ venues, center, selectedId, onMarkerClick }: VenueMap
     const map = mapRef.current;
     const L   = leafletRef.current;
     if (!map || !L) {
-      // Map not ready yet — retry once it is
       const timer = setTimeout(() => {
         const m = mapRef.current, l = leafletRef.current;
         if (m && l) renderMarkers(m, l);
@@ -102,7 +103,7 @@ export function VenueMap({ venues, center, selectedId, onMarkerClick }: VenueMap
     }
     renderMarkers(map, L);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [venues, selectedId]);
+  }, [venues, selectedId, userLocation]);
 
   function renderMarkers(map: import("leaflet").Map, L: typeof import("leaflet")) {
     // Remove old markers
@@ -132,19 +133,33 @@ export function VenueMap({ venues, center, selectedId, onMarkerClick }: VenueMap
         venue.status === "CLOSED"     ? "#dc2626" :
         venue.status === "RENOVATION" ? "#d97706" : "#6b7280";
 
+      const distHtml = userLocation
+        ? `<span style="color:#94a3b8;font-size:10px;margin-left:4px">· 📍 ${fmtDistance(haversineKm(userLocation.lat, userLocation.lng, venue.latitude, venue.longitude))}</span>`
+        : "";
+
+      const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${venue.latitude},${venue.longitude}`;
+
       marker.bindPopup(`
-        <div style="padding:14px 16px;min-width:190px;font-family:var(--font-sans,'Open Sans',system-ui,sans-serif)">
+        <div style="padding:14px 16px;min-width:200px;font-family:var(--font-sans,'Open Sans',system-ui,sans-serif)">
           <div style="font-weight:700;font-size:13px;color:#e2e8f0;margin-bottom:3px;line-height:1.3">${venue.name}</div>
-          <div style="color:#64748b;font-size:11px;margin-bottom:8px">${meta.icon} ${venue.type.replace(/_/g, " ")}${venue.city ? " · " + venue.city : ""}</div>
+          <div style="color:#64748b;font-size:11px;margin-bottom:8px;display:flex;align-items:center;flex-wrap:wrap;gap:2px">
+            ${meta.icon} ${venue.type.replace(/_/g, " ")}${venue.city ? " · " + venue.city : ""}${distHtml}
+          </div>
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
             <span style="background:${statusColor}22;color:${statusColor};font-size:10px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid ${statusColor}44">${venue.status}</span>
           </div>
-          <a href="/venues/${venue.id}"
-             style="display:block;text-align:center;padding:7px 12px;background:oklch(0.6692 0.1607 245);color:white;border-radius:10px;font-size:11px;font-weight:600;text-decoration:none;letter-spacing:0.01em">
-            View details →
-          </a>
+          <div style="display:flex;gap:6px">
+            <a href="/venues/${venue.id}"
+               style="flex:1;display:block;text-align:center;padding:7px 10px;background:oklch(0.6692 0.1607 245);color:white;border-radius:10px;font-size:11px;font-weight:600;text-decoration:none">
+              Details →
+            </a>
+            <a href="${directionsUrl}" target="_blank" rel="noopener"
+               style="display:block;text-align:center;padding:7px 10px;background:#16a34a22;color:#22c55e;border-radius:10px;font-size:11px;font-weight:600;text-decoration:none;border:1px solid #22c55e33">
+              🗺 Go
+            </a>
+          </div>
         </div>
-      `, { maxWidth: 260 });
+      `, { maxWidth: 280 });
 
       marker.on("click", () => {
         marker.openPopup();
@@ -162,6 +177,21 @@ export function VenueMap({ venues, center, selectedId, onMarkerClick }: VenueMap
       map.fitBounds(bounds, { padding: [48, 48], maxZoom: 15 });
     }
   }
+
+  // ── user location blue dot ────────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current;
+    const L   = leafletRef.current;
+    userMarkerRef.current?.remove();
+    if (!map || !L || !userLocation) return;
+    userMarkerRef.current = L.circleMarker([userLocation.lat, userLocation.lng], {
+      radius: 8,
+      color: "white",
+      weight: 2,
+      fillColor: "#3b82f6",
+      fillOpacity: 1,
+    }).addTo(map).bindPopup("<div style='font-size:11px;font-weight:600;color:#e2e8f0'>📍 Your location</div>");
+  }, [userLocation]);
 
   // ── pan to selected venue ──────────────────────────────────────
   useEffect(() => {

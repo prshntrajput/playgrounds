@@ -6,21 +6,23 @@
 - Environments: .env.local
 
   Creating an optimized production build ...
-✓ Compiled successfully in 4.5s
+✓ Compiled successfully in 3.2s
   Running TypeScript ...
-  Finished TypeScript in 3.3s ...
-  Collecting page data using 7 workers ...
-  Generating static pages using 7 workers (0/5) ...
-  Generating static pages using 7 workers (1/5) 
-  Generating static pages using 7 workers (2/5) 
-  Generating static pages using 7 workers (3/5) 
-✓ Generating static pages using 7 workers (5/5) in 483ms
+  Finished TypeScript in 3.4s ...
+  Collecting page data using 8 workers ...
+  Generating static pages using 8 workers (0/6) ...
+  Generating static pages using 8 workers (1/6) 
+  Generating static pages using 8 workers (2/6) 
+  Generating static pages using 8 workers (4/6) 
+✓ Generating static pages using 8 workers (6/6) in 486ms
   Finalizing page optimization ...
 
 Route (app)
 ┌ ○ /
 ├ ○ /_not-found
+├ ○ /admin
 ├ ƒ /auth/callback
+├ ○ /submit-venue
 └ ƒ /venues/[id]
 
 
